@@ -63,6 +63,8 @@ class TFTPd(object):
         ''' Sends the next block of data '''
         state = self.state[address]
         blockid = state['block'] + 1
+        if blockid > 65535:
+            blockid = 0
         data = state['handle'].read(512)
         if len(data) < 512:
             self.state[address]['state'] = 'reading_final'
@@ -102,11 +104,11 @@ class TFTPd(object):
 
     def ack_request(self, address, data):
         ''' Handles TFTP acknowledgement packets '''
-        blockid = struct.unpack('!H', data)
+        blockid = struct.unpack('!H', data)[0]
         if address in self.state:
             state = self.state[address]
             if state['state'] == 'reading':
-                state['block'] += 1
+                state['block'] = blockid
                 self.send_data(address)
             elif state['state'] == 'reading_final':
                 msg = "Read transfer of {0} to {1}:{2} complete"
